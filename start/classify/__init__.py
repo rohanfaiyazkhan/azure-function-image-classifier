@@ -12,7 +12,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         file = req.files['file']
-        logging.info(file)
     except:
         logging.error('File not found')
 
