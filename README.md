@@ -21,7 +21,7 @@ For azure local development, install:
 
 For deployment to azure, install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 
-Local development setup:
+## Local development setup
 
 ```bash
 cd start
@@ -36,4 +36,31 @@ source venv/bin/activate
 python -m pip install -r requirements.txt
 
 func start
+```
+
+To test use an API client (or application) to send a `POST` request with `multipart/form-data` along with an input with key of `file` to http://localhost:7071/api/classify. For example using Insomnia:
+
+![Example of multipart/form-data request with input key file using insomnia client](./request_params.jpg)
+
+## Deployment
+
+To deploy to Azure, create a Azure Storage Account and Azure Function (using consumption plan is good enough for a basic deployment) using either Azure Portal or CLI. Make sure to also add the `AzureJobsStorage` and `AzureWebJobsDashboard` configuration keys to `DefaultEndpointsProtocol=https;AccountName=[name];AccountKey=[key]`
+
+Make sure you are logged in to Azure CLI:
+
+```bash
+az login
+```
+
+Publish app:
+
+```bash
+func azure functionapp publish [[YOUR Function App name]]
+# Note that you can add `--no-build` params on later deploys to avoid rebuilding packages.
+```
+
+You can always check the URL of the deploy using:
+
+```bash
+azure functionapp list-functions [[YOUR Function App name]] --show-keys
 ```
