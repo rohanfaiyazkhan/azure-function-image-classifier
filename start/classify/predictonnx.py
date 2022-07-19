@@ -39,11 +39,7 @@ labels = load_labels(labelfile)
 def preprocess(input_data):
     img_data = resize_image_to_square(input_data)
 
-    print(img_data.shape)
-
     # normalize
-    mean_vec = np.array([0.485, 0.456, 0.406])
-    stddev_vec = np.array([0.229, 0.224, 0.225])
     norm_img_data = img_data/255
 
     # add batch channel
@@ -76,7 +72,7 @@ def resize_image_to_square(im: np.ndarray, desired_size=48):
     return np.array(new_im)
 
 
-def crop_faces(im: Image, padding=8):
+def crop_faces(im: Image.Image, padding=8):
     im = im.convert("L")
     im_arr = np.array(im)
     face_cascade = cv2.CascadeClassifier(
@@ -106,31 +102,6 @@ def crop_faces(im: Image, padding=8):
     return faces, crops
 
 
-def predict_image_from_file(file):
-    with Image.open(file) as image:
-        imnew = ImageOps.fit(image, (224, 224))
-
-        image_data = np.array(imnew).transpose(2, 0, 1)
-        input_data = preprocess(image_data)
-
-        start = time.time()
-        raw_result = session.run([], {input_name: input_data})
-        end = time.time()
-        res = postprocess(raw_result)
-
-        inference_time = np.round((end - start) * 1000, 2)
-        idx = np.argmax(res)
-
-        response = {
-            'created': datetime.utcnow().isoformat(),
-            'prediction': labels[idx],
-            'latency': inference_time,
-            'confidence': res[idx]
-        }
-        logging.info(f'returning {response}')
-        return response
-
-
 def run_single_inference(raw_input):
     input_data = preprocess(raw_input)
 
@@ -146,13 +117,8 @@ def run_single_inference(raw_input):
     return label, conf, res
 
 
-def predict_image_from_url(image_url):
-    with urlopen(image_url) as testImage:
-        image = Image.open(testImage)
-
-    imnew = ImageOps.fit(image, (224, 224))
-
-    faces, crops = crop_faces(imnew)
+def predict(image: Image.Image):
+    faces, crops = crop_faces(image)
 
     results = []
 
@@ -163,6 +129,32 @@ def predict_image_from_url(image_url):
 
     end = time.time()
     inference_time = np.round((end - start) * 1000, 2)
+
+    return results, inference_time, faces
+
+
+def predict_image_from_file(file):
+    with Image.open(file) as image:
+        # imnew = ImageOps.fit(image, (224, 224))
+        results, inference_time, faces = predict(image)
+
+        response = {
+            'created': datetime.utcnow().isoformat(),
+            'results': results,
+            'latency': inference_time,
+            'faces': faces
+        }
+        logging.info(f'returning {response}')
+        return response
+
+
+def predict_image_from_url(image_url):
+    with urlopen(image_url) as testImage:
+        image = Image.open(testImage)
+
+    # imnew = ImageOps.fit(image, (224, 224))
+
+    results, inference_time, faces = predict(image)
 
     response = {
         'created': datetime.utcnow().isoformat(),
