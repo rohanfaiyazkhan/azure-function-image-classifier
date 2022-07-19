@@ -3,3 +3,5 @@ requests
 pillow
 onnx
 onnxruntime
+numpy
+opencv-python
