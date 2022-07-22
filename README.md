@@ -35,7 +35,7 @@ python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
 
-func start
+func start --cors *
 ```
 
 To test use an API client (or application) to send a `POST` request with `multipart/form-data` along with an input with key of `file` to http://localhost:7071/api/classify. For example using Insomnia:

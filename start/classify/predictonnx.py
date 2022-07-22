@@ -23,6 +23,10 @@ def load_labels(path):
     return np.asarray(data)
 
 
+class ImageNotOpenableError(Exception):
+    pass
+
+
 # Run the model on the backend
 d = os.path.dirname(os.path.abspath(__file__))
 modelfile = os.path.join(d, 'detect_emotion.onnx')
@@ -112,9 +116,11 @@ def run_single_inference(raw_input):
     idx = np.argmax(res)
 
     label = labels[idx]
-    conf = res[idx]
+    conf = np.round(res[idx], 2)
 
-    return label, conf, res
+    results_rounded = [np.round(n, 2) for n in res]
+
+    return label, conf, results_rounded
 
 
 def predict(image: Image.Image):
@@ -130,7 +136,7 @@ def predict(image: Image.Image):
     end = time.time()
     inference_time = np.round((end - start) * 1000, 2)
 
-    return results, inference_time, faces
+    return results, inference_time, faces.tolist()
 
 
 def predict_image_from_file(file):
@@ -149,8 +155,12 @@ def predict_image_from_file(file):
 
 
 def predict_image_from_url(image_url):
-    with urlopen(image_url) as testImage:
-        image = Image.open(testImage)
+    try:
+        with urlopen(image_url) as testImage:
+            image = Image.open(testImage)
+    except:
+        logging.error("Unable to open URL")
+        raise ImageNotOpenableError("Unable to open URL")
 
     # imnew = ImageOps.fit(image, (224, 224))
 
