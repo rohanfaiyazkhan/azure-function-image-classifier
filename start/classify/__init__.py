@@ -26,12 +26,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(json.dumps(results), headers=headers)
         except ImageNotOpenableError as e:
             return func.HttpResponse(
-                "Unable to open image from URL",
+                json.dumps({"error": "Unable to open image from URL"}),
                 headers=headers, status_code=400
             )
         except:
             return func.HttpResponse(
-                "Sorry something went wrong",
+                json.dumps({"error": "Sorry something went wrong"}),
                 headers=headers, status_code=500
             )
 
@@ -48,12 +48,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             logging.error("Error opening file")
 
             return func.HttpResponse(
-                "Unable to open file passed",
+                json.dumps({"error": "Unable to open file passed"}),
                 headers=headers, status_code=400
             )
 
     else:
         return func.HttpResponse(
-            "Please pass a file or img_url in the request",
+            json.dumps({"error": "Please pass a file or img_url in the request"}),
             headers=headers, status_code=400
         )
