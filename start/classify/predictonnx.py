@@ -1,19 +1,16 @@
-import enum
 import numpy as np    # we're going to use numpy to process input and output data
 import onnxruntime    # to inference ONNX models, we use the ONNX Runtime
-import onnx
-from onnx import numpy_helper
 from urllib.request import urlopen
 import json
 import time
-
+import torchvision.transforms as transforms
 import logging
 import os
 import sys
 from datetime import datetime
 
 # display images in notebook
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image
 import cv2
 
 
@@ -41,15 +38,21 @@ labels = load_labels(labelfile)
 
 
 def preprocess(input_data):
-    img_data = resize_image_to_square(input_data)
+    img_data = Image.fromarray(resize_image_to_square(input_data))
 
-    # normalize
-    norm_img_data = img_data/255
+    mu, st = 0, 255
 
-    # add batch channel
-    img_data = norm_img_data.reshape(1, 1, 48, 48).astype('float32')
+    pre_transforms = transforms.Compose([
+        transforms.Grayscale(),
+        transforms.CenterCrop(40),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(mu,), std=(st,))
+    ])
 
-    return img_data
+    transformed_data = pre_transforms(img_data)
+    transformed_data = transformed_data.unsqueeze(0)
+
+    return transformed_data.numpy()
 
 
 def softmax(x):
@@ -62,18 +65,23 @@ def postprocess(result):
     return softmax(np.array(result)).tolist()
 
 
-def resize_image_to_square(im: np.ndarray, desired_size=48):
+def resize_image_to_square(im: np.ndarray, desired_size=40):
     im = Image.fromarray(im)
     old_size = im.size
+
     ratio = float(desired_size)/min(old_size)
     new_size = tuple([int(x*ratio) for x in old_size])
 
     im = im.resize(new_size, Image.Resampling.LANCZOS)
-    new_im = Image.new("L", (desired_size, desired_size))
-    new_im.paste(im, ((desired_size-new_size[0])//2,
-                      (desired_size-new_size[1])//2))
+    im_arr = np.array(im)
 
-    return np.array(new_im)
+    new_arr_size = im_arr.shape
+    x_diff = (new_arr_size[0] - desired_size) // 2
+    y_diff = (new_arr_size[1] - desired_size) // 2
+
+    new_im_arr = im_arr[x_diff:new_arr_size[0]-x_diff, y_diff:new_arr_size[1]-y_diff]
+
+    return new_im_arr
 
 
 def crop_faces(im: Image.Image, padding=8):
@@ -176,5 +184,15 @@ def predict_image_from_url(image_url):
     return response
 
 
-if __name__ == '__main__':
-    print(predict_image_from_url(sys.argv[1]))
+# if __name__ == '__main__':
+#     print(predict_image_from_url(sys.argv[1]))
+
+if __name__ == "__main__":
+    img = np.array(Image.open("../sample.jpeg"))
+    # new_img = resize_image_to_square(img)
+
+    # preprocessed_data = preprocess(new_img)
+    results = run_single_inference(img)
+
+    print(results)
+    
