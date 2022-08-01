@@ -3,11 +3,10 @@ import onnxruntime    # to inference ONNX models, we use the ONNX Runtime
 from urllib.request import urlopen
 import json
 import time
-import torchvision.transforms as transforms
 import logging
 import os
-import sys
 from datetime import datetime
+from utils import center_crop, normalize, rgb_to_grayscale, softmax
 
 # display images in notebook
 from PIL import Image
@@ -38,27 +37,18 @@ labels = load_labels(labelfile)
 
 
 def preprocess(input_data):
-    img_data = Image.fromarray(resize_image_to_square(input_data))
+    img = Image.fromarray(resize_image_to_square(input_data))
 
-    mu, st = 0, 255
+    img_data = rgb_to_grayscale(img, 1)
+    img_data = center_crop(img_data, 40)
 
-    pre_transforms = transforms.Compose([
-        transforms.Grayscale(),
-        transforms.CenterCrop(40),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=(mu,), std=(st,))
-    ])
+    img_arr = np.array(img_data)
+    img_arr = np.expand_dims(img_arr, axis=0)
+    img_arr = np.expand_dims(img_arr, axis=0)
 
-    transformed_data = pre_transforms(img_data)
-    transformed_data = transformed_data.unsqueeze(0)
+    img_arr = normalize(img_arr)
 
-    return transformed_data.numpy()
-
-
-def softmax(x):
-    x = x.reshape(-1)
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0)
+    return img_arr
 
 
 def postprocess(result):
@@ -79,7 +69,8 @@ def resize_image_to_square(im: np.ndarray, desired_size=40):
     x_diff = (new_arr_size[0] - desired_size) // 2
     y_diff = (new_arr_size[1] - desired_size) // 2
 
-    new_im_arr = im_arr[x_diff:new_arr_size[0]-x_diff, y_diff:new_arr_size[1]-y_diff]
+    new_im_arr = im_arr[x_diff:new_arr_size[0] -
+                        x_diff, y_diff:new_arr_size[1]-y_diff]
 
     return new_im_arr
 
@@ -188,11 +179,10 @@ def predict_image_from_url(image_url):
 #     print(predict_image_from_url(sys.argv[1]))
 
 if __name__ == "__main__":
-    img = np.array(Image.open("../sample.jpeg"))
+    img = np.array(Image.open("sample.jpeg"))
     # new_img = resize_image_to_square(img)
 
     # preprocessed_data = preprocess(new_img)
     results = run_single_inference(img)
 
     print(results)
-    

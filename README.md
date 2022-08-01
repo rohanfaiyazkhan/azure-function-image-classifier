@@ -64,3 +64,8 @@ You can always check the URL of the deploy using:
 ```bash
 azure functionapp list-functions [[YOUR Function App name]] --show-keys
 ```
+
+Syncing triggers...
+Functions in emotiondetectionapp:
+classify - [httpTrigger]
+Invoke url: https://emotiondetectionapp.azurewebsites.net/api/classify

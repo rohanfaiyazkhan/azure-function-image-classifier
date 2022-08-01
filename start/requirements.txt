@@ -1,9 +1,8 @@
 azure-functions
 requests
-pillow
+Pillow
 onnx
 onnxruntime
 numpy
 opencv-python
-torch==1.12.0
-torchvision==0.13.0
+urllib3
